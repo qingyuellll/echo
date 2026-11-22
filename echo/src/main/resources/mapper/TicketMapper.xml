@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.echo.mapper.TicketMapper">
+
+    <resultMap id="TicketWithSeckill" type="com.echo.entity.Ticket">
+        <id column="id" property="id"/>
+        <result column="show_id" property="showId"/>
+        <result column="title" property="title"/>
+        <result column="sub_title" property="subTitle"/>
+        <result column="rules" property="rules"/>
+        <result column="pay_value" property="payValue"/>
+        <result column="actual_value" property="actualValue"/>
+        <result column="type" property="type"/>
+        <result column="has_seats" property="hasSeats"/>
+        <result column="stock" property="stock"/>
+        <result column="total_stock" property="totalStock"/>
+        <result column="sold_count" property="soldCount"/>
+        <result column="locked" property="locked"/>
+        <result column="seckill_stock" property="seckillStock"/>
+        <result column="begin_time" property="beginTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="status" property="status"/>
+        <result column="scheduled_publish_time" property="scheduledPublishTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="queryTicketOfShow" resultMap="TicketWithSeckill" parameterType="java.lang.Long">
+        SELECT
+            v.`id`, v.`show_id`, v.`title`, v.`sub_title`, v.`rules`, v.`pay_value`,
+            v.`actual_value`, v.`type`,
+            v.`has_seats`,
+            v.`stock`,
+            v.`status`, v.`create_time`, v.`update_time`,
+            sv.`stock` AS seckill_stock,
+            sv.`begin_time`, sv.`end_time`
+        FROM tb_ticket v
+        LEFT JOIN tb_seckill_ticket sv ON v.id = sv.ticket_id
+        WHERE v.show_id = #{showId} AND v.status = 1
+    </select>
+
+    <!--
+    ====================================================
+    📊 索引优化建议（高并发场景必加）
+    ====================================================
+
+    ✅ 必须添加的索引：
+
+    1. tb_ticket 表复合索引：
+       ALTER TABLE tb_ticket ADD INDEX idx_show_status (show_id, status);
+       - 用途：加速 queryTicketOfShow 查询
+       - 原因：WHERE条件使用 show_id + status
+
+    2. tb_ticket_order 表索引：
+       ALTER TABLE tb_ticket_order ADD INDEX idx_user_ticket (user_id, ticket_id);
+       - 用途：加速秒杀重复下单检查
+       - 原因：WHERE条件使用 user_id + ticket_id
+
+       ALTER TABLE tb_ticket_order ADD INDEX idx_user_status (user_id, status);
+       - 用途：加速用户订单查询
+       - 原因：按用户+状态筛选订单
+
+    3. tb_seckill_ticket 表索引：
+       ALTER TABLE tb_seckill_ticket ADD INDEX idx_ticket_id (ticket_id);
+       - 用途：加速秒杀配置查询
+       - 原因：LEFT JOIN 使用 ticket_id
+
+    4. tb_show 表索引：
+       ALTER TABLE tb_show ADD INDEX idx_status (status);
+       - 用途：加速上架演出列表查询
+
+    ⚡ 性能提升预期：
+       - queryTicketOfShow: 从全表扫描 → 索引范围查询（10x+ 提升）
+       - 秒杀重复检查: 从O(n) 到 O(log n)（100x+ 提升）
+       - 用户订单查询: 支持百万级数据秒级响应
+
+    🔍 验证SQL执行计划：
+       EXPLAIN SELECT * FROM tb_ticket WHERE show_id = 100 AND status = 1;
+       - type应为 ref 或 range，key应显示使用的索引名
+    -->
+</mapper>

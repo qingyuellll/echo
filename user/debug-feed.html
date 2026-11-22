@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Feed流调试工具</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        button { padding: 8px 16px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+        button:hover { background: #0056b3; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
+        .error { color: red; }
+        .success { color: green; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Feed流调试工具</h1>
+
+    <div class="section">
+        <h3>1. 检查当前登录状态</h3>
+        <button onclick="checkLoginStatus()">检查登录状态</button>
+        <pre id="loginStatus"></pre>
+    </div>
+
+    <div class="section">
+        <h3>2. 测试关注功能</h3>
+        <input type="number" id="targetUserId" placeholder="要关注的用户ID" value="1" />
+        <button onclick="testFollow()">关注该用户</button>
+        <button onclick="testUnfollow()">取消关注</button>
+        <button onclick="checkFollowStatus()">检查关注状态</button>
+        <pre id="followResult"></pre>
+    </div>
+
+    <div class="section">
+        <h3>3. 查看 Feed 流内容</h3>
+        <button onclick="loadFollowFeed()">加载关注Feed流</button>
+        <button onclick="loadRecommended()">加载随机推荐</button>
+        <pre id="feedContent"></pre>
+    </div>
+
+    <div class="section">
+        <h3>4. 清除缓存并刷新</h3>
+        <button onclick="clearCache()" style="background: #dc3545;">清除所有缓存</button>
+        <pre id="cacheResult"></pre>
+    </div>
+
+<script>
+const BASE_URL = '/api';
+
+async function request(url, options = {}) {
+    const token = sessionStorage.getItem('token');
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': token } : {})
+    };
+
+    const response = await fetch(`${BASE_URL}${url}`, { ...options, headers });
+
+    if (response.status === 401) {
+        return { error: '未登录或Token过期', status: 401 };
+    }
+
+    const data = await response.json();
+    return data;
+}
+
+async function checkLoginStatus() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const token = sessionStorage.getItem('token');
+
+    const result = {
+        'localStorage.user': user,
+        'sessionStorage.token': token ? `${token.substring(0, 20)}...` : null,
+        '是否已登录': !!(user && user.id && token)
+    };
+
+    document.getElementById('loginStatus').innerHTML =
+        `<span class="${result['是否已登录'] ? 'success' : 'error'}">` +
+        JSON.stringify(result, null, 2) + '</span>';
+}
+
+async function testFollow() {
+    const targetUserId = document.getElementById('targetUserId').value;
+    if (!targetUserId) {
+        alert('请输入用户ID');
+        return;
+    }
+
+    try {
+        const res = await request(`/follow/${targetUserId}`, { method: 'POST', body: JSON.stringify({ isFollow: true }) });
+        document.getElementById('followResult').innerHTML =
+            `<span class="success">关注结果：</span>\n${JSON.stringify(res, null, 2)}`;
+
+        // 自动检查关注状态
+        setTimeout(checkFollowStatus, 500);
+    } catch (e) {
+        document.getElementById('followResult').innerHTML =
+            `<span class="error">关注失败：</span>${e.message}`;
+    }
+}
+
+async function testUnfollow() {
+    const targetUserId = document.getElementById('targetUserId').value;
+    if (!targetUserId) {
+        alert('请输入用户ID');
+        return;
+    }
+
+    try {
+        const res = await request(`/follow/${targetUserId}`, { method: 'POST', body: JSON.stringify({ isFollow: false }) });
+        document.getElementById('followResult').innerHTML =
+            `<span class="success">取消关注结果：</span>\n${JSON.stringify(res, null, 2)}`;
+    } catch (e) {
+        document.getElementById('followResult').innerHTML =
+            `<span class="error">取消关注失败：</span>${e.message}`;
+    }
+}
+
+async function checkFollowStatus() {
+    const targetUserId = document.getElementById('targetUserId').value;
+    if (!targetUserId) {
+        alert('请输入用户ID');
+        return;
+    }
+
+    try {
+        const res = await request(`/follow/or/not/${targetUserId}`);
+        document.getElementById('followResult').innerHTML +=
+            `\n\n<span class="success">关注状态：</span>\n${JSON.stringify(res, null, 2)}`;
+    } catch (e) {
+        document.getElementById('followResult').innerHTML +=
+            `\n\n<span class="error">查询失败：</span>${e.message}`;
+    }
+}
+
+async function loadFollowFeed() {
+    try {
+        const res = await request('/show-review/of/follow?lastId=0&offset=0');
+        const count = res.data ? res.data.length : 0;
+        document.getElementById('feedContent').innerHTML =
+            `<span class="success">关注Feed流 (${count}条)：</span>\n${
+                JSON.stringify(res, null, 2).substring(0, 2000)
+            }${JSON.stringify(res, null, 2).length > 2000 ? '\n...(截断)' : ''}`;
+    } catch (e) {
+        document.getElementById('feedContent').innerHTML =
+            `<span class="error">加载失败：</span>${e.message}`;
+    }
+}
+
+async function loadRecommended() {
+    try {
+        const res = await request('/show-review/recommended?lastId=0&offset=0');
+        const count = res.data ? res.data.length : 0;
+        document.getElementById('feedContent').innerHTML +=
+            `\n\n<span class="success">随机推荐 (${count}条)：</span>\n${
+                JSON.stringify(res, null, 2).substring(0, 2000)
+            }${JSON.stringify(res, null, 2).length > 2000 ? '\n...(截断)' : ''}`;
+    } catch (e) {
+        document.getElementById('feedContent').innerHTML +=
+            `\n\n<span class="error">加载失败：</span>${e.message}`;
+    }
+}
+
+function clearCache() {
+    localStorage.clear();
+    sessionStorage.clear();
+
+    document.getElementById('cacheResult').innerHTML =
+        '<span class="success">✅ 缓存已清除！\n\n即将跳转到登录页...</span>';
+
+    setTimeout(() => {
+        window.location.hash = '#/login';
+        window.location.reload();
+    }, 1500);
+}
+</script>
+</body>
+</html>

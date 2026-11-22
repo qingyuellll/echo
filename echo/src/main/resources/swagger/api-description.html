@@ -1,0 +1,143 @@
+<h3>前后端字段命名规范</h3>
+<table border='1' cellpadding='5' cellspacing='0'>
+    <tr>
+        <th>实体</th>
+        <th>标准字段名</th>
+        <th>类型</th>
+        <th>说明</th>
+    </tr>
+
+    <!-- Show 演出 -->
+    <tr>
+        <td rowspan='8'><b>Show</b><br/>演出</td>
+        <td><code>name</code></td>
+        <td>String</td>
+        <td>演出名称</td>
+    </tr>
+    <tr>
+        <td><code>images</code></td>
+        <td>String</td>
+        <td>图片列表(JSON数组)</td>
+    </tr>
+    <tr>
+        <td><code>openTime</code></td>
+        <td>String</td>
+        <td>开演时间</td>
+    </tr>
+    <tr>
+        <td><code>address</code></td>
+        <td>String</td>
+        <td>详细地址</td>
+    </tr>
+    <tr>
+        <td><code>avgPrice</code></td>
+        <td>Integer</td>
+        <td>平均票价(分)</td>
+    </tr>
+    <tr>
+        <td><code>sold</code></td>
+        <td>Integer</td>
+        <td>已售数量</td>
+    </tr>
+    <tr>
+        <td style='color:red;text-decoration:line-through;'><code>posterUrl</code></td>
+        <td>-</td>
+        <td>已废弃</td>
+    </tr>
+    <tr>
+        <td style='color:red;text-decoration:line-through;'><code>beginTime</code></td>
+        <td>-</td>
+        <td>已废弃</td>
+    </tr>
+
+    <!-- Ticket 票种 -->
+    <tr>
+        <td rowspan='7'><b>Ticket</b><br/>票种</td>
+        <td><code>title</code></td>
+        <td>String</td>
+        <td>票种标题</td>
+    </tr>
+    <tr>
+        <td><code>payValue</code></td>
+        <td>Integer</td>
+        <td>支付金额(分)</td>
+    </tr>
+    <tr>
+        <td><code>actualValue</code></td>
+        <td>Integer</td>
+        <td>实际价值(分)</td>
+    </tr>
+    <tr>
+        <td><code>soldCount</code></td>
+        <td>Integer</td>
+        <td>已售数量(运行时)</td>
+    </tr>
+    <tr>
+        <td><code>isSeckill</code></td>
+        <td>Boolean</td>
+        <td>是否秒杀票</td>
+    </tr>
+    <tr>
+        <td><code>seckillStock</code></td>
+        <td>Integer</td>
+        <td>秒杀库存</td>
+    </tr>
+    <tr>
+        <td><code>remainingStock</code></td>
+        <td>Integer</td>
+        <td>剩余库存</td>
+    </tr>
+
+    <!-- Order 订单 -->
+    <tr>
+        <td rowspan='6'><b>Order</b><br/>订单</td>
+        <td><code>id</code></td>
+        <td>Long</td>
+        <td>订单ID(雪花算法)</td>
+    </tr>
+    <tr>
+        <td><code>ticketTitle</code></td>
+        <td>String</td>
+        <td>票种标题(动态填充)</td>
+    </tr>
+    <tr>
+        <td><code>payValue</code></td>
+        <td>Long</td>
+        <td>总价=quantity×单价(分)</td>
+    </tr>
+    <tr>
+        <td><code>verificationCode</code></td>
+        <td>String</td>
+        <td>核销码(8位)</td>
+    </tr>
+    <tr>
+        <td style='color:red;text-decoration:line-through;'><code>ticketName</code></td>
+        <td>-</td>
+        <td>已废弃</td>
+    </tr>
+    <tr>
+        <td style='color:red;text-decoration:line-through;'><code>orderNo</code></td>
+        <td>-</td>
+        <td>已废弃</td>
+    </tr>
+
+    <!-- User 用户 -->
+    <tr>
+        <td rowspan='3'><b>User</b><br/>用户</td>
+        <td><code>nickName</code></td>
+        <td>String</td>
+        <td>用户昵称</td>
+    </tr>
+    <tr>
+        <td><code>phone</code></td>
+        <td>String</td>
+        <td>手机号</td>
+    </tr>
+    <tr>
+        <td style='color:red;text-decoration:line-through;'><code>name/username/nickname</code></td>
+        <td>-</td>
+        <td>已废弃</td>
+    </tr>
+</table>
+<br/>
+<b>重要提示：</b>所有新代码必须使用标准字段，禁止使用已废弃字段！

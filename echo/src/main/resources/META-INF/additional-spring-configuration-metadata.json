@@ -1,0 +1,10 @@
+{
+  "properties": [
+    {
+      "name": "rocketmq.producer.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable RocketMQ producer.",
+      "defaultValue": true
+    }
+  ]
+}

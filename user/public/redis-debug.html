@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redis秒杀票库存诊断工具</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button.danger {
+            background: #f44336;
+        }
+        button.warning {
+            background: #ff9800;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            background: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+        }
+        .error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .ticket-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .ticket-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+        .ticket-card h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .status-ok { color: #4CAF50; font-weight: bold; }
+        .status-error { color: #f44336; font-weight: bold; }
+        .status-warning { color: #ff9800; font-weight: bold; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #f5f5f5;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Redis秒杀票库存诊断工具</h1>
+
+        <div class="input-group">
+            <label for="showId">演出ID (Show ID)</label>
+            <input type="number" id="showId" placeholder="输入演出ID，如：21" value="21">
+        </div>
+
+        <button onclick="checkTickets()">1. 查询票种列表（含Redis库存）</button>
+        <button onclick="checkSeckillStatus()" class="warning">2. 检查秒杀票状态详情</button>
+        <button onclick="refreshRedisStock()" class="danger">3. 手动刷新Redis库存</button>
+
+        <div id="result"></div>
+
+        <script>
+            const API_BASE = '/api';
+
+            async function apiCall(url, options = {}) {
+                try {
+                    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+                    const csrfToken = localStorage.getItem('csrfToken');
+
+                    const response = await fetch(`${API_BASE}${url}`, {
+                        ...options,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+                            ...options.headers
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    return await response.json();
+                } catch (error) {
+                    console.error('[API Error]', error);
+                    throw error;
+                }
+            }
+
+            function showResult(html, isError = false) {
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = `<div class="result ${isError ? 'error' : ''}">${html}</div>`;
+            }
+
+            function formatTime(timestamp) {
+                if (!timestamp) return '无';
+                const date = new Date(timestamp);
+                return date.toLocaleString('zh-CN');
+            }
+
+            // 功能1：查询票种列表
+            async function checkTickets() {
+                const showId = document.getElementById('showId').value;
+                if (!showId) {
+                    showResult('<p style="color:red">请输入演出ID</p>', true);
+                    return;
+                }
+
+                try {
+                    const res = await apiCall(`/ticket/list/${showId}`);
+                    const tickets = res.data || [];
+
+                    let html = `
+                        <h2>📋 票种列表 (Show ID: ${showId})</h2>
+                        <p>共获取 ${tickets.length} 个票种</p>
+                        <div class="ticket-info">
+                    `;
+
+                    tickets.forEach(ticket => {
+                        const isSeckill = ticket.isSeckill || ticket.type === 3 || ticket.type === 4;
+                        const stockStatus = isSeckill
+                            ? (ticket.seckillStock > 0
+                                ? '<span class="status-ok">有库存 (' + ticket.seckillStock + ')</span>'
+                                : '<span class="status-error">无库存 (0)</span>')
+                            : (ticket.remainingStock > 0
+                                ? '<span class="status-ok">有库存 (' + ticket.remainingStock + ')</span>'
+                                : '<span class="status-error">无库存 (0)</span>');
+
+                        html += `
+                            <div class="ticket-card">
+                                <h3>${ticket.title || '未命名'} ${isSeckill ? '(秒杀)' : '(普通)'}</h3>
+                                <table>
+                                    <tr><th>字段</th><th>值</th></tr>
+                                    <tr><td>ID</td><td>${ticket.id}</td></tr>
+                                    <tr><td>类型</td><td>${ticket.type} (${isSeckill ? '秒杀' : '普通'})</td></tr>
+                                    <tr><td>状态</td><td>${ticket.status === 1 ? '上架' : ticket.status === 0 ? '下架' : '停用'}</td></tr>
+                                    <tr><td>DB原始库存(stock)</td><td>${ticket.stock ?? 'null'}</td></tr>
+                                    <tr><td>剩余库存(remainingStock)</td><td>${ticket.remainingStock ?? 'null'}</td></tr>
+                                    ${isSeckill ? `
+                                        <tr><td><b>Redis库存(seckillStock)</b></td><td><b>${ticket.seckillStock ?? 'null'}</b></td></tr>
+                                        <tr><td>开始时间(beginTime)</td><td>${formatTime(ticket.beginTime)}</td></tr>
+                                    ` : ''}
+                                    <tr><td>价格</td><td>${ticket.payValue || ticket.price || '未知'}</td></tr>
+                                    <tr><td>库存状态</td><td>${stockStatus}</td></tr>
+                                </table>
+                            </div>
+                        `;
+                    });
+
+                    html += '</div>';
+
+                    // 添加诊断建议
+                    const seckillTickets = tickets.filter(t => t.isSeckill);
+                    if (seckillTickets.length > 0) {
+                        html += `
+                            <h3>💡 诊断建议</h3>
+                            <ul>
+                        `;
+
+                        seckillTickets.forEach(t => {
+                            if (t.seckillStock == null) {
+                                html += `<li class="status-error">票种 [${t.title}] (ID:${t.id}) 的 seckillStock 为 null！Redis key可能不存在或已过期。</li>`;
+                            } else if (t.seckillStock <= 0) {
+                                html += `<li class="status-warning">票种 [${t.title}] (ID:${t.id}) 的 Redis 库存为 ${t.seckillStock}。可能原因：
+                                    <ul>
+                                        <li>Redis中的库存确实为0（已售罄）</li>
+                                        <li>管理端修改了时间但未重新初始化Redis库存</li>
+                                        <li>Redis key的TTL已过期</li>
+                                    </ul>
+                                    <button onclick="fixTicket(${t.id})" class="warning">修复此票种的Redis库存</button>
+                                </li>`;
+                            } else {
+                                html += `<li class="status-ok">票种 [${t.title}] (ID:${t.id}) Redis库存正常：${t.seckillStock}</li>`;
+                            }
+                        });
+
+                        html += '</ul>';
+                    }
+
+                    showResult(html);
+
+                } catch (error) {
+                    showResult(`<pre>错误: ${error.message}\n\n请确保：\n1. 已登录账号\n2. 演出ID正确\n3. 后端服务正常运行</pre>`, true);
+                }
+            }
+
+            // 功能2：检查秒杀票状态详情
+            async function checkSeckillStatus() {
+                const showId = document.getElementById('showId').value;
+                if (!showId) {
+                    showResult('<p style="color:red">请输入演出ID</p>', true);
+                    return;
+                }
+
+                try {
+                    // 先获取票种列表
+                    const res = await apiCall(`/ticket/list/${showId}`);
+                    const tickets = res.data || [];
+                    const seckillTicketIds = tickets.filter(t => t.isSeckill).map(t => t.id);
+
+                    if (seckillTicketIds.length === 0) {
+                        showResult('<p>该演出没有秒杀票种</p>');
+                        return;
+                    }
+
+                    let html = `<h2>🔬 秒杀票状态详情</h2>`;
+
+                    for (const ticketId of seckillTicketIds) {
+                        try {
+                            const statusRes = await apiCall(`/ticket/status/${ticketId}`);
+                            const info = statusRes.data;
+
+                            html += `
+                                <div class="ticket-card">
+                                    <h3>票种ID: ${ticketId} - ${tickets.find(t => t.id === ticketId)?.title}</h3>
+                                    <table>
+                                        <tr><th>状态项</th><th>值</th></tr>
+                                        <tr><td>票种状态(status)</td><td>${info.status === 1 ? '上架' : info.status === 0 ? '下架' : '停用'}</td></tr>
+                                        <tr><td>是否秒杀(isSeckill)</td><td>${info.isSeckill ? '是' : '否'}</td></tr>
+                                        <tr><td>是否可购买(isActive)</td><td>${info.isActive ? '<span class="status-ok">是</span>' : '<span class="status-error">否</span>'}</td></tr>
+                                        <tr><td>当前库存(stock)</td><td><b>${info.stock ?? '未知'}</b></td></tr>
+                                        <tr><td>开始时间(beginTime)</td><td>${formatTime(info.beginTime)}</td></tr>
+                                        <tr><td>结束时间(endTime)</td><td>${formatTime(info.endTime)}</td></tr>
+                                        <tr><td>当前时间</td><td>${new Date().toLocaleString()}</td></tr>
+                                        <tr><td>距离开始</td><td>${info.beginTime ? Math.max(0, Math.floor((new Date(info.beginTime) - new Date()) / 1000 / 60)) + '分钟' : '未知'}</td></tr>
+                                        <tr><td>距离结束</td><td>${info.endTime ? Math.max(0, Math.floor((new Date(info.endTime) - new Date()) / 1000 / 60)) + '分钟' : '未知'}</td></tr>
+                                    </table>
+                                </div>
+                            `;
+                        } catch (e) {
+                            html += `<div class="ticket-card error"><h3>票种ID: ${ticketId}</h3><p>查询失败: ${e.message}</p></div>`;
+                        }
+                    }
+
+                    showResult(html);
+
+                } catch (error) {
+                    showResult(`<pre>错误: ${error.message}</pre>`, true);
+                }
+            }
+
+            // 功能3：手动刷新Redis库存
+            async function refreshRedisStock() {
+                const showId = document.getElementById('showId').value;
+                if (!showId) {
+                    showResult('<p style="color:red">请输入演出ID</p>', true);
+                    return;
+                }
+
+                if (!confirm('确定要刷新该演出的所有秒杀票Redis库存吗？\n\n这将重新从数据库读取库存并写入Redis。')) {
+                    return;
+                }
+
+                try {
+                    const res = await apiCall(`/admin/ticket/refresh-seckill-stock/${showId}`, { method: 'POST' });
+                    showResult(`
+                        <h2>✅ 刷新成功</h2>
+                        <pre>${JSON.stringify(res, null, 2)}</pre>
+                        <p>请返回功能1重新查询，确认库存是否更新。</p>
+                    `);
+                } catch (error) {
+                    showResult(`<pre>刷新失败: ${error.message}\n\n可能原因：\n1. 无管理员权限\n2. 接口不存在\n3. 后端服务异常</pre>`, true);
+                }
+            }
+
+            // 修复单个票种的Redis库存
+            async function fixTicket(ticketId) {
+                if (!confirm(`确定要修复票种ID ${ticketId} 的Redis库存吗？`)) {
+                    return;
+                }
+
+                try {
+                    // 调用后端接口重新初始化该票种的Redis库存
+                    const res = await apiCall(`/debug/fix-redis-stock/${ticketId}`, { method: 'POST' });
+                    alert(`修复成功！请重新查询票种列表确认。`);
+                    checkTickets();
+                } catch (error) {
+                    alert(`修复失败: ${error.message}\n\n可能需要手动操作Redis或重启后端服务。`);
+                }
+            }
+
+            // 页面加载时自动执行一次
+            window.onload = () => {
+                console.log('Redis诊断工具已加载');
+                console.log('使用方法：');
+                console.log('1. 输入演出ID');
+                console.log('2. 点击"查询票种列表"查看Redis库存');
+                console.log('3. 如果库存异常，点击"手动刷新Redis库存"修复');
+            };
+        </script>
+    </div>
+</body>
+</html>

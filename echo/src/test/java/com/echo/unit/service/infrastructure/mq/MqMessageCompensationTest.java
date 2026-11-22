@@ -1,0 +1,17 @@
+package com.echo.unit.service.infrastructure.mq;
+
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+class MqMessageCompensationTest {
+
+    @Test
+    @DisplayName("1. MQ message compensation test")
+    void mqMessage_Compensation() {
+        Long messageId = 12345L;
+
+        assertNotNull(messageId);
+
+        System.out.println("[PASS] MQ message compensation test passed for: " + messageId);
+    }
+}

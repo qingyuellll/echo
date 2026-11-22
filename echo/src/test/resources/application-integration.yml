@@ -1,0 +1,46 @@
+# 集成测试配置 - 连接真实中间件（Redis、RocketMQ、MySQL）
+# 使用方法：@ActiveProfiles("integration")
+# 前提条件：必须启动以下服务：
+#   1. MySQL (127.0.0.1:3306, database: echo)
+#   2. Redis (127.0.0.1:6379)
+#   3. RocketMQ NameServer (127.0.0.1:9876)
+
+spring:
+  # 强制使用真实 MySQL（覆盖 application-test.yml 的 H2 配置）
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/echo?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:123456}
+
+  # Redis 配置
+  redis:
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: 15  # 使用独立的 DB15 避免与开发环境冲突
+    lettuce:
+      pool:
+        max-active: 10
+        max-idle: 10
+        min-idle: 1
+
+# 启用 RocketMQ
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESRV:127.0.0.1:9876}
+  producer:
+    enabled: true
+    group: integration-test-producer-group
+    send-message-timeout: 3000
+
+# MyBatis-Plus 配置（显示SQL便于调试）
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 日志级别（集成测试时显示详细信息）
+logging:
+  level:
+    com.echo.mapper: debug
+    com.echo.service.impl: info
+    org.springframework.cache: debug

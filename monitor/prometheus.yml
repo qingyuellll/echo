@@ -1,0 +1,36 @@
+# ============================================================
+# Echo 演出票务系统 —— Prometheus 抓取配置
+#
+# 后端指标出口：http://localhost:8081/actuator/prometheus
+# （Spring Boot Actuator + Micrometer 自动暴露 JVM / HTTP / 业务自定义指标）
+#
+# 抓取间隔 30 秒：票务业务量不大，30s 足够看清趋势，
+# 又能把 TSDB 体积压到 15s 的一半左右。
+# 排查秒杀瞬时抖动时，把 scrape_interval 临时调到 5s 再重启即可。
+# ============================================================
+
+global:
+  scrape_interval: 30s      # 每 30 秒抓一次
+  scrape_timeout: 10s       # 单次抓取超过 10s 算失败（必须 < scrape_interval）
+  evaluation_interval: 30s  # 告警规则求值间隔，与抓取周期对齐
+
+scrape_configs:
+  # ---------- 业务后端 ----------
+  - job_name: "echo-backend"
+    metrics_path: /actuator/prometheus
+    scheme: http
+    static_configs:
+      - targets: ["localhost:8081"]
+        labels:
+          app: "echo-ticket"
+    # 注意：labels 一旦变动，Prometheus 会认为是一条新序列，
+    # 旧的会残留 5 分钟（staleness），期间 sum() 会重复计数。
+    # 所以标签定好了就别随意改，改完等 5 分钟再下结论。
+
+  # ---------- 自我监控 ----------
+  # 方便在 Grafana 里看 Prometheus 自己的抓取耗时、样本数
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels:
+          app: "prometheus"

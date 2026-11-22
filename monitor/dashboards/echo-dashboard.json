@@ -1,0 +1,425 @@
+{
+  "uid": "echo-dashboard",
+  "title": "Echo 票务系统 · 业务监控",
+  "tags": ["echo", "ticket"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 2,
+  "editable": true,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "秒杀成功总数",
+      "datasource": { "type": "prometheus", "uid": "prom-echo" },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(order_seckill_success_total)",
+          "legendFormat": "秒杀成功",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "支付成功总数",
+      "datasource": { "type": "prometheus", "uid": "prom-echo" },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(order_payment_success_total)",
+          "legendFormat": "支付成功",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "当前待支付订单",
+      "datasource": { "type": "prometheus", "uid": "prom-echo" },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "order_pending_current",
+          "legendFormat": "待支付",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 50 },
+              { "color": "red", "value": 200 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "后端抓取状态",
+      "datasource": { "type": "prometheus", "uid": "prom-echo" },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "up{job=\"echo-backend\"}",
+          "legendFormat": "{{instance}}",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "接口请求 QPS Top5",
+      "datasource": { "type": "prometheus", "uid": "prom-echo" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(5, sum by (endpoint) (rate(api_request_duration_seconds_count[2m])))",
+          "legendFormat": "{{endpoint}}",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "lineWidth": 2, "fillOpacity": 8 } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "接口响应 P95 Top5（秒）",
+      "datasource": { "type": "prometheus", "uid": "prom-echo" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(5, max by (endpoint) (api_request_duration_seconds{quantile=\"0.95\"}))",
+          "legendFormat": "{{endpoint}}",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2, "fillOpacity": 8 } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "下单处理耗时 P95 / P50（秒）",
+      "datasource": { "type": "prometheus", "uid": "prom-echo" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "order_create_duration_seconds{quantile=\"0.95\"}",
+          "legendFormat": "P95",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        },
+        {
+          "refId": "B",
+          "expr": "order_create_duration_seconds{quantile=\"0.5\"}",
+          "legendFormat": "P50",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2, "fillOpacity": 8 } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "秒杀链路处理耗时 P95 / P50（秒）",
+      "datasource": { "type": "prometheus", "uid": "prom-echo" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "seckill_process_duration_seconds{quantile=\"0.95\"}",
+          "legendFormat": "P95",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        },
+        {
+          "refId": "B",
+          "expr": "seckill_process_duration_seconds{quantile=\"0.5\"}",
+          "legendFormat": "P50",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2, "fillOpacity": 8 } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "支付处理耗时 P95（秒）",
+      "datasource": { "type": "prometheus", "uid": "prom-echo" },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 21 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "payment_process_duration_seconds{quantile=\"0.95\"}",
+          "legendFormat": "支付 P95",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2, "fillOpacity": 8 } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Redis 补偿任务耗时（近峰值，秒）",
+      "datasource": { "type": "prometheus", "uid": "prom-echo" },
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 21 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "redis_compensation_duration_seconds_max",
+          "legendFormat": "max",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2, "fillOpacity": 8 } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "座位清理任务耗时（近峰值，秒）",
+      "datasource": { "type": "prometheus", "uid": "prom-echo" },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 21 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "seat_cleanup_duration_seconds_max",
+          "legendFormat": "max",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2, "fillOpacity": 8 } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "积分抵扣拦截总数",
+      "datasource": { "type": "prometheus", "uid": "prom-echo" },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 21 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(order_points_discount_rejected_total)",
+          "legendFormat": "拦截",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "JVM 堆内存（MB）",
+      "datasource": { "type": "prometheus", "uid": "prom-echo" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 29 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(jvm_memory_used_bytes{area=\"heap\"}) / 1048576",
+          "legendFormat": "已用",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        },
+        {
+          "refId": "B",
+          "expr": "sum(jvm_memory_max_bytes{area=\"heap\"}) / 1048576",
+          "legendFormat": "上限",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decmbytes",
+          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "上限" },
+            "properties": [{ "id": "custom.fillOpacity", "value": 0 }, { "id": "custom.lineStyle", "value": { "dash": [8, 4], "fill": "dash" } }]
+          }
+        ]
+      }
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "业务事件速率（每分钟）",
+      "datasource": { "type": "prometheus", "uid": "prom-echo" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 29 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(order_seckill_success_total[5m])) * 60",
+          "legendFormat": "秒杀成功",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(order_payment_success_total[5m])) * 60",
+          "legendFormat": "支付成功",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        },
+        {
+          "refId": "C",
+          "expr": "sum(rate(order_timeout_success_total[5m])) * 60",
+          "legendFormat": "超时关单",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        },
+        {
+          "refId": "D",
+          "expr": "sum(rate(seat_cleanup_success_total[5m])) * 60",
+          "legendFormat": "座位清理",
+          "datasource": { "type": "prometheus", "uid": "prom-echo" }
+        }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 8 } },
+        "overrides": []
+      }
+    }
+  ]
+}

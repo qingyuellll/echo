@@ -1,0 +1,12 @@
+# Grafana 仪表盘自动装配：扫描本目录，启动时自动加载 JSON 面板
+apiVersion: 1
+
+providers:
+  - name: Echo Dashboards
+    orgId: 1
+    folder: Echo 票务系统
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    options:
+      path: D:/echo/monitor/dashboards

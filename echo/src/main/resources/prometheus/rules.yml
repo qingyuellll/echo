@@ -1,0 +1,119 @@
+groups:
+  - name: seckill_alerts
+    interval: 30s
+    rules:
+      - alert: StockAnomaly
+        expr: seckill_stock_remaining < 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "秒杀库存异常（超卖）"
+          description: "票种 {{ $labels.ticket_id }} 库存为负数，可能存在超卖问题"
+
+      - alert: StockExhausted
+        expr: seckill_stock_remaining == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "秒杀票已售罄"
+          description: "票种 {{ $labels.ticket_id }} 已售罄超过5分钟"
+
+      - alert: SeckillOrderSurge
+        expr: sum(rate(orders_total{type="seckill",status="success"}[5m])) * 60 > 100
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "秒杀订单量激增"
+          description: "秒杀订单创建速率超过100/分钟，当前速率：{{ $value }}/分钟"
+
+  - name: api_alerts
+    interval: 30s
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(api_requests_total{status=~"5.."}[5m])) /
+            sum(rate(api_requests_total[5m]))
+          ) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API错误率过高"
+          description: "API错误率超过10%，当前错误率：{{ $value | humanizePercentage }}"
+
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95, sum(rate(api_request_duration_seconds_bucket[5m])) by (le))
+          > 2
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API响应延迟过高"
+          description: "P95延迟超过2秒，当前P95：{{ $value }}秒"
+
+      - alert: SuddenTrafficDrop
+        expr: |
+          (
+            sum(rate(api_requests_total[5m])) offset 5m
+          ) / sum(rate(api_requests_total[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "流量骤降"
+          description: "API请求量骤降超过50%，可能存在服务故障"
+
+  - name: security_alerts
+    interval: 30s
+    rules:
+      - alert: LoginFailureSurge
+        expr: |
+          rate(login_attempts_total{result="failed"}[5m]) >
+          rate(login_attempts_total{result="success"}[5m]) * 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "登录失败次数异常"
+          description: "登录失败次数是成功次数的5倍以上，可能存在暴力破解攻击"
+
+      - alert: VerificationAnomaly
+        expr: rate(verification_operations_total{result="failed"}[5m]) > 10
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "核销操作异常"
+          description: "核销失败频率过高（>10次/分钟），可能存在伪造核销码"
+
+  - name: business_health
+    interval: 60s
+    rules:
+      - alert: NoOrders
+        expr: |
+          increase(orders_total[1h]) == 0
+        for: 30m
+        labels:
+          severity: info
+        annotations:
+          summary: "长时间无新订单"
+          description: "过去1小时无新订单产生，需确认业务是否正常"
+
+      - alert: OrderCancelHigh
+        expr: |
+          (
+            sum(increase(order_timeout_success_total[1h]))
+            /
+            clamp_min(sum(increase(orders_total[1h])), 1)
+          ) > 0.5
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "订单取消率过高"
+          description: "超时关闭的订单占全部订单比例超过50%，可能存在支付链路或库存问题"

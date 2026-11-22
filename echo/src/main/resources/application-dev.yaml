@@ -1,0 +1,83 @@
+# ========================================
+# Echo演出票务系统 - 开发环境配置
+# ========================================
+# 激活方式: java -jar echo.jar --spring.profiles.active=dev
+# 或: SPRING_PROFILES_ACTIVE=dev mvn spring-boot:run
+
+spring:
+  # ===== 数据库配置（开发环境使用本地数据库）=====
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/echo?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:123456}
+
+    # 开发环境连接池（较小规模）
+    hikari:
+      maximum-pool-size: 10              # 开发环境10个连接足够
+      minimum-idle: 2                    # 最小空闲2个
+      idle-timeout: 300000               # 空闲超时5分钟
+      max-lifetime: 1800000              # 连接最大生命周期30分钟
+      connection-timeout: 10000          # 连接获取超时10秒（开发环境快速失败）
+      leak-detection-threshold: 60000    # 泄漏检测1分钟
+
+  # ===== Redis配置（开发环境）=====
+  redis:
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}          # 开发环境可无密码
+    lettuce:
+      pool:
+        max-active: 8                    # 开发环境8连接
+        max-idle: 8
+        min-idle: 1
+
+  # ===== Jackson配置（开发环境：便于调试）=====
+  jackson:
+    default-property-inclusion: always   # 包含null值，方便调试
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    serialization:
+      indent-output: true                # JSON美化输出
+
+  # ===== DevTools热部署（开发环境）=====
+  devtools:
+    restart:
+      enabled: true                      # 启用自动重启
+      poll-interval: 2000                # 轮询间隔2秒
+    livereload:
+      enabled: true                      # 浏览器自动刷新
+
+# ===== SpringDoc Swagger配置（开发环境开启）=====
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    tryItOutEnabled: true               # 允许在线测试API
+
+# ===== CSRF防护（开发环境可关闭，简化调试）=====
+csrf:
+  enabled: false                         # 开发环境关闭CSRF
+
+# ===== 日志级别（开发环境：详细日志）=====
+logging:
+  level:
+    root: INFO
+    com.echo: DEBUG                     # 项目代码DEBUG级别
+    org.springframework.web: DEBUG       # Spring Web DEBUG
+    org.hibernate.SQL: DEBUG             # SQL语句输出
+    com.zaxer.hikari: DEBUG             # 连接池状态
+
+# ===== RocketMQ配置（开发环境）=====
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESRV:127.0.0.1:9876}
+  producer:
+    group: echo-producer-group-dev
+
+# ===== JVM优化参数建议（开发环境）=====
+# -Xms256m -Xmx512m -XX:+UseG1GC
+# -XX:+PrintGCDetails -Xloggc:./logs/gc-dev.log

@@ -1,0 +1,31 @@
+# ========================================
+# Docker 容器化部署专用配置
+# 激活方式：SPRING_PROFILES_ACTIVE=docker
+# ========================================
+# 说明：数据源 / Redis / RocketMQ 的地址在 application.yaml 里已经写成
+#       ${MYSQL_HOST:...} 这类环境变量占位符，compose 里传环境变量即可，
+#       这里只补容器环境特有的差异，避免和主配置重复。
+
+spring:
+  # 容器内没有 devtools 热部署，也不需要
+  devtools:
+    restart:
+      enabled: false
+    livereload:
+      enabled: false
+
+# 两个前端在请求拦截器中携带 X-CSRF-Token，登录接口在免校验清单内，
+# 容器环境与本地一致开启 CSRF 防护。
+csrf:
+  enabled: true
+
+echo:
+  upload:
+    # 图片根目录：由 compose 挂载的卷覆盖（宿主机 ./deploy/imgs -> 容器 /data/imgs）
+    image-root: ${ECHO_IMAGE_ROOT:/data/imgs}
+
+logging:
+  level:
+    root: info
+    com.echo: info
+    com.echo.mapper: error

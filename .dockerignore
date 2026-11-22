@@ -1,0 +1,16 @@
+**/node_modules
+**/dist
+**/target
+**/.git
+**/.idea
+**/.vscode
+**/*.log
+**/logs
+nginx-1.18.0
+jmeter
+docs
+*.sql
+*.rdb
+deploy/mysql-init
+deploy/imgs
+deploy/dump.err

@@ -1,0 +1,265 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: echo
+
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+  # 数据库配置（必须放在spring:下面，不能放在springdoc:下面！）
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/echo?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:123456}
+
+    # HikariCP连接池优化配置（生产级）
+    hikari:
+      maximum-pool-size: 20              # 最大连接数（根据CPU核心数*2+1调整）
+      minimum-idle: 5                    # 最小空闲连接（保持热启动）
+      idle-timeout: 300000               # 空闲连接超时时间（5分钟，单位毫秒）
+      max-lifetime: 1800000              # 连接最大生命周期（30分钟，建议小于数据库wait_timeout）
+      connection-timeout: 30000          # 连接获取超时时间（30秒）
+      leak-detection-threshold: 60000    # 连接泄漏检测阈值（1分钟，开发环境可开启）
+
+      # 连接有效性验证（防止使用失效连接）
+      validation-timeout: 5000           # 连接验证超时（5秒）
+      connection-test-query: SELECT 1    # MySQL连接测试语句
+
+      # 性能优化参数
+      pool-name: EchoHikariPool          # 连接池名称（便于监控和日志识别）
+
+  # Redis配置（必须放在spring:下面）
+  redis:
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    lettuce:
+      pool:
+        max-active: 10
+        max-idle: 10
+        min-idle: 1
+        time-between-eviction-runs: 10s
+
+  # Jackson JSON配置（必须放在spring:下面）
+  jackson:
+    default-property-inclusion: non_null
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+
+  # 定时任务调度线程池：秒杀队列消费(100ms)、预订单超时补偿(30s)、秒杀对账(2min)、
+  # 定时发布(1min)各自独占线程并行执行。默认单线程时，任一慢任务会阻塞其余全部定时链路，
+  # 兜底任务会与主链路同时停摆，因此按任务类别预留4条线程
+  task:
+    scheduling:
+      pool:
+        size: 4
+      thread:
+        name-prefix: sched-
+      shutdown:
+        await-termination: true
+        await-termination-period: 30s
+
+# CORS跨域配置（逗号分隔字符串，供 @Value 直接注入 List）
+cors:
+  allowed-origins: "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:3002"
+
+# Actuator 监控端点（health 供探活，prometheus 供指标采集）
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: never
+
+# SpringDoc OpenAPI 配置（独立的顶级配置，不能包含datasource/redis/jackson）
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:true}
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    tryItOutEnabled: ${SWAGGER_TRY_IT_OUT:true}
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESRV:127.0.0.1:9876}
+  producer:
+    group: echo-producer-group
+    send-message-timeout: 3000
+    retry-times-when-send-failed: 2
+  enabled: true  # 启用RocketMQ（需要先启动NameServer和Broker）
+mybatis-plus:
+  type-aliases-package: com.echo.entity
+  configuration:
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
+
+# 线程池配置
+threadpool:
+  # 关注/取关异步线程池（IO密集型：DB写操作）
+  follow:
+    core-size: 5
+    max-size: 10
+    queue-capacity: 100
+    keep-alive-seconds: 60
+
+  # 缓存删除异步线程池（轻量级任务）
+  cache-delete:
+    core-size: 2
+    max-size: 5
+    queue-capacity: 50
+    keep-alive-seconds: 30
+
+  # 通用异步任务线程池（预留弹性空间）
+  async-task:
+    core-size: 10
+    max-size: 50
+    queue-capacity: 200
+    keep-alive-seconds: 60
+
+  # 秒杀补偿任务线程池：MQ发送失败的回滚重试专用，与业务异步任务隔离，
+  # 队列打满时走AbortPolicy降级到定期兜底（预订单超时补偿30s + 秒杀对账2min），
+  # 保证补偿重试在调度线程之外执行
+  compensation:
+    core-size: 2
+    max-size: 5
+    queue-capacity: 100
+    keep-alive-seconds: 30
+
+  # 全局配置：优雅关闭等待时间（秒）
+  await-termination-seconds: 60
+
+# 异常处理配置（关键字分类，用于RuntimeException兼容模式）
+exception:
+  # 用户友好的业务错误 → 返回 HTTP 200（前端可直接展示）
+  user-friendly-keywords:
+    - 库存不足
+    - 积分
+    - 座位锁定
+    - 座位已
+    - 座位不
+    - 座位列表
+    - 座位状态
+    - 乐观锁冲突
+    - 票种
+    - 订单
+    - 支付
+    - 退款
+    - 上传
+    - 保存失败
+    - 创建失败
+    - 发布失败
+
+  # 系统繁忙/限流相关 → 返回 HTTP 503（前端应提示重试）
+  rate-limit-keywords:
+    - 频繁
+    - 系统繁忙
+    - 服务繁忙
+    - 连接池
+    - 超时
+    - mq
+    - redis
+    - 缓存
+
+  # 数据/参数错误 → 返回 HTTP 400（前端应提示修正输入）
+  data-error-keywords:
+    - 不存在
+    - 不能为空
+    - 参数
+    - 格式
+    - 非法
+    - 无效
+
+logging:
+  level:
+    root: info
+    com.echo.mapper: error
+
+echo:
+  csrf:
+    exclude-paths:
+      - /error
+      - /admin/login
+      - /admin/code
+      - /admin/init-password
+      - /user/login
+      - /user/code
+      - /upload
+  upload:
+    # 图片资源根目录，部署环境通过 ECHO_IMAGE_ROOT 覆盖
+    image-root: "${ECHO_IMAGE_ROOT:D:/echo/nginx-1.18.0/nginx-1.18.0/html/ssn/imgs}"
+  admin:
+    # 引导令牌：用于在无任何可登录凭证时重置超级管理员密码
+    # 由部署方通过环境变量 ADMIN_BOOTSTRAP_TOKEN 注入，留空表示关闭该通道
+    bootstrap-token: "${ADMIN_BOOTSTRAP_TOKEN:}"
+  seckill:
+    # 秒杀排队队列容量上限（ZADD按用户去重，正常量=真实用户数；超限快速失败，防恶意灌队列）
+    queue-max-size: 100000
+  cache:
+    # 延迟双删-④：二次删除的RocketMQ延时级别（3=10秒），覆盖主从延迟窗口
+    double-delete-delay-level: 3
+  mvc:
+    fully-public:
+      # 错误转发路径必须公开：容器把 404/500 等异常转发到 /error，
+      # 若被登录拦截器拦截，真实错误会被替换成误导性的 401 未登录
+      - /error
+      - /ssn/imgs/**
+      - /css/**
+      - /js/**
+      - /images/**
+      - /fonts/**
+      - /favicon.ico
+      - /user/code
+      - /user/login
+      - /admin/login
+      - /admin/code
+      # 接口文档与运行指标：开发/测试环境直接访问，生产环境由网关层限制来源
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /v3/api-docs/**
+      - /actuator/health
+      - /actuator/info
+      - /actuator/prometheus
+    auth-optional:
+      - /user/{id}
+      - /user/info/{id}
+      - /user/search
+      - /user/profile/{id}
+      - /admin/logout
+      - /follow/status/**
+      - /follow/common/**
+      - /show/search
+      - /show/of/**
+      - /show/{id}
+      - /show/{id}/follow
+      - /show-type/**
+      - /ticket/list/**
+      - /ticket/detail/**
+      - /ticket/*/seats
+      - /show-review/hot
+      - /show-review/latest
+      - /show-review/search
+      - /show-review/recommended
+      - /show-review/latest-commented
+      - /show-review/{id}
+      - /show-review/likes/{id}
+      - /show-review/of/user
+      - /show-review/of/show
+      - /show-review-comments/of/**
+      - /statistics/dashboard
+      - /statistics/hot-shows
+      - /statistics/sales-trend
+    admin-logout-path: /admin/logout
+    special-login-paths:
+      - /show/favorite/my
+      - /show/follow/my
+      - /upload/**
+    # 引导入口：跳过登录校验、管理员身份校验与 CSRF 校验，授权交给引导令牌
+    bootstrap-paths:
+      - /admin/init-password

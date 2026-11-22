@@ -1,0 +1,3 @@
+# 上传图片目录
+运行时由后端写入（echo.upload.image-root 与 compose 的 ./deploy/imgs 卷挂载）。
+仓库只保留本占位文件。

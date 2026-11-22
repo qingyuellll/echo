@@ -1,0 +1,129 @@
+# ========================================
+# Echo演出票务系统 - 生产环境配置
+# ========================================
+# 激活方式: java -jar echo.jar --spring.profiles.active=prod
+# 或: SPRING_PROFILES_ACTIVE=prod nohup java -jar echo.jar &
+
+spring:
+  # ===== 数据库配置（生产环境使用强密码）=====
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT:3306}/echo?useSSL=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER}              # 必须通过环境变量传入
+    password: ${MYSQL_PASSWORD}          # 必须通过环境变量传入（强密码！）
+
+    # 生产环境连接池（大规模）
+    hikari:
+      maximum-pool-size: 50              # 生产环境50连接
+      minimum-idle: 10                   # 最小空闲10个
+      idle-timeout: 600000               # 空闲超时10分钟
+      max-lifetime: 1800000              # 连接最大生命周期30分钟
+      connection-timeout: 30000          # 连接获取超时30秒
+      leak-detection-threshold: 60000    # 泄漏检测1分钟
+
+      # 连接有效性验证（生产环境必须开启）
+      validation-timeout: 5000           # 验证超时5秒
+      connection-test-query: SELECT 1    # MySQL健康检查
+
+      # 性能优化
+      pool-name: EchoProdHikariPool     # 连接池名称（便于监控）
+
+  # ===== Redis配置（生产环境）=====
+  redis:
+    host: ${REDIS_HOST}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD}          # 必须设置强密码！
+    lettuce:
+      pool:
+        max-active: 20                   # 生产环境20连接
+        max-idle: 10
+        min-idle: 5
+      shutdown-timeout: 100ms            # 优雅关闭超时
+
+  # ===== Jackson配置（生产环境：性能优先）=====
+  jackson:
+    default-property-inclusion: non_null  # 排除null值，减少传输量
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    serialization:
+      indent-output: false               # 关闭JSON美化，提升性能
+
+  # ===== DevTools（生产环境关闭）=====
+  devtools:
+    restart:
+      enabled: false                     # 关闭热部署
+    livereload:
+      enabled: false                     # 关闭浏览器刷新
+
+# ===== SpringDoc Swagger（生产环境必须关闭！）=====
+springdoc:
+  api-docs:
+    enabled: false                       # 关闭API文档
+  swagger-ui:
+    enabled: false                       # 关闭Swagger UI
+
+# ===== CSRF防护（生产环境必须开启）=====
+csrf:
+  enabled: true                          # 开启CSRF防护
+
+# ===== 日志级别（生产环境：只记录重要信息）=====
+logging:
+  level:
+    root: WARN                           # 全局WARN级别
+    com.echo: INFO                       # 项目代码INFO级别
+    org.springframework.web: WARN        # Spring Web WARN
+    org.hibernate.SQL: WARN              # SQL只记录异常
+    com.zaxer.hikari: INFO               # 连接池INFO
+
+  # 日志文件输出（生产环境必须写入文件）
+  file:
+    name: ./logs/echo-prod.log           # 日志文件路径
+    max-size: 100MB                      # 单个日志文件最大100MB
+    max-history: 30                      # 保留30天历史
+    total-size-cap: 3GB                  # 总日志大小上限3GB
+
+# ===== RocketMQ配置（生产环境）=====
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESRV}
+  producer:
+    group: echo-producer-group-prod
+    retry-times-when-send-failed: 3      # 发送失败重试3次
+    retry-next-server: true              # 重试时切换Broker
+
+# ===== Actuator监控端点（生产环境限制访问）=====
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus  # 只暴露必要端点
+  endpoint:
+    health:
+      show-details: when-authorized      # 健康检查详情仅授权用户可见
+  server:
+    # 管理端点默认与业务端口一致：容器健康检查（8081/actuator/health）
+    # 与 Prometheus 抓取（8081/actuator/prometheus）沿用同一地址。
+    # 需要独立管理端口时用 MANAGEMENT_PORT 覆盖，并同步调整抓取与探活配置。
+    port: ${MANAGEMENT_PORT:${server.port:8081}}
+
+# ===== JVM优化参数建议（生产环境）=====
+# -Xms2048m -Xmx4096m                    # 堆内存2-4GB
+# -XX:+UseG1GC                          # G1垃圾收集器
+# -XX:MaxGCPauseMillis=200             # GC暂停<200ms
+# -XX:+HeapDumpOnOutOfMemoryError       # OOM自动导出堆转储
+# -XX:HeapDumpPath=/var/log/echo/heapdump.hprof
+# -Dcom.sun.management.jmxremote        # 启用JMX监控
+# -Dcom.sun.management.jmxremote.port=9999
+# -Dcom.sun.management.jmxremote.authenticate=true  # 开启认证
+# -Dcom.sun.management.jmxremote.access.file=/path/to/jmxremote.access
+#
+# 完整启动命令示例：
+# export MYSQL_HOST=192.168.1.100
+# export MYSQL_PASSWORD=YourStrongPassword123!
+# export REDIS_HOST=192.168.1.101
+# export REDIS_PASSWORD=YourRedisPassword456!
+# nohup java \
+#   -Xms2048m -Xmx4096m \
+#   -XX:+UseG1GC \
+#   -XX:MaxGCPauseMillis=200 \
+#   -jar echo.jar \
+#   --spring.profiles.active=prod \
+#   > /dev/null 2>&1 &

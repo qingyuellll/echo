@@ -1,0 +1,105 @@
+:root {
+  /* ===== 主色（用户端大面积暖白） ===== */
+  --color-bg: #f9f8f4;
+  --color-bg-alt: #ece0ca;
+  --color-bg-card: #ffffff;
+
+  /* ===== 品牌色（灰绿为主，棕/褐为辅） ===== */
+  --color-primary: #a6baae;
+  --color-primary-dark: #8a9e8f;
+  --color-primary-alpha: rgba(166, 186, 174, 0.1);
+  --color-secondary: #967462;
+  --color-accent: #5d3e3f;
+
+  /* ===== 文字颜色 ===== */
+  --color-text: #2d3a31;
+  --color-text-light: #6b6b6b;
+  --color-text-muted: #8c8c8c;
+
+  /* ===== 边框与阴影 ===== */
+  --color-border: #e6e2da;
+  --color-shadow: rgba(45, 58, 49, 0.08);
+
+  /* ===== 纯白/暖白辅助 ===== */
+  --color-white: #ffffff;
+  --color-white-off: #f5f3ee;
+  --color-white-gray: #fafafa;
+
+  /* ===== 状态色基础 ===== */
+  --color-success: #7a9e7e;
+  --color-success-dark: #52c41a;
+  --color-success-light: #73d13d;
+  --color-danger: #c4877b;
+  --color-danger-dark: #ff4d4f;
+  --color-danger-light: #ff7875;
+  --color-warning: #d4b87a;
+  --color-warning-dark: #fa8c16;
+  --color-warning-darker: #d46b08;
+  --color-warning-light: #ffd666;
+  --color-info: #8a9fb8;
+  --color-info-dark: #1890ff;
+  --color-info-light: #69c0ff;
+
+  /* ===== 字号阶梯 ===== */
+  --font-xs: 12px;
+  --font-sm: 14px;
+  --font-base: 16px;
+  --font-lg: 20px;
+  --font-xl: 24px;
+  --font-2xl: 32px;
+
+  /* ===== 间距（4px 网格） ===== */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ===== 圆角（仅 6px / 8px） ===== */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* ===== 阴影（仅2级） ===== */
+  --shadow-sm: 0 1px 2px var(--color-shadow);
+  --shadow-md: 0 4px 12px var(--color-shadow);
+  --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.15);
+
+  /* ===== 过渡 ===== */
+  --transition-fast: 0.15s ease-out;
+  --transition-normal: 0.25s ease-out;
+  --transition-base: 0.3s ease-out;
+
+  /* ===== 背景色变体（语义化） ===== */
+  --color-bg-success: #f6ffed;
+  --color-bg-danger: #fff1f0;
+  --color-bg-warning: #fff7e6;
+  --color-bg-info: #e6f7ff;
+  --color-bg-neutral: #fafafa;
+
+  /* ===== 边框色变体 ===== */
+  --color-border-success: #b7eb8f;
+  --color-border-danger: #ffa39e;
+  --color-border-warning: #ffd591;
+  --color-border-warning-light: #ffe58f;
+  --color-border-info: #91d5ff;
+  --color-border-neutral: #d9d9d9;
+
+  /* ===== 渐变色组合 ===== */
+  --gradient-warning-bg: linear-gradient(135deg, #fff7e6, #ffe7ba);
+  --gradient-warning-icon: linear-gradient(135deg, #fff1b8, #ffd666);
+  --gradient-success-bg: linear-gradient(135deg, #f6ffed, #d9f7be);
+  --gradient-danger-bg: linear-gradient(135deg, #fff1f0, #ffccc7);
+  --gradient-info-bg: linear-gradient(135deg, #e6f7ff, #bae7ff);
+
+  /* ===== 字体族 ===== */
+  --font-heading: 'Playfair Display', Georgia, serif;
+  --font-body: 'Source Sans 3', 'Inter', system-ui, -apple-system, sans-serif;
+}

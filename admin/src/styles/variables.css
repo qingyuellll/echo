@@ -1,0 +1,131 @@
+:root {
+  /* ===== 主色（管理端大面积灰绿） ===== */
+  --color-bg: #a6baae;
+  --color-bg-card: #f9f8f4;
+  --color-bg-alt: #ece0ca;
+
+  /* ===== 品牌色 ===== */
+  --color-primary: #967462;
+  --color-secondary: #5d3e3f;
+  --color-accent: #a6baae;
+
+  /* ===== 文字颜色 ===== */
+  --color-text: #2d3a31;
+  --color-text-light: #5d5e5a;
+
+  /* ===== 边框与阴影 ===== */
+  --color-border: #d6d0c4;
+  --color-shadow: rgba(45, 58, 49, 0.08);
+
+  /* ===== 纯白 ===== */
+  --color-white: #ffffff;
+  --color-white-off: #f5f3ee;
+
+  /* ===== 状态色（基础） ===== */
+  --color-success: #7a9e7e;
+  --color-danger: #c4877b;
+  --color-warning: #d4b87a;
+  --color-info: #8a9fb8;
+
+  /* ===== 状态色变体（深色/强调） ===== */
+  --color-success-dark: #5d8a6b;
+  --color-success-medium: #7a9e7e;
+  --color-success-light: #95b899;
+  --color-success-pale: #e8f5ea;
+
+  --color-danger-dark: #d9363e;
+  --color-danger-medium: #ff4d4f;
+  --color-danger-light: #ff7875;
+  --color-danger-pale: #ffccc7;
+
+  --color-warning-dark: #6b7267;
+  --color-warning-medium: #8a9185;
+  --color-warning-light: #a8b0a3;
+  --color-warning-pale: #eef0ec;
+
+  --color-info-dark: #0958d9;
+  --color-info-medium: #1890ff;
+  --color-info-light: #40a9ff;
+  --color-info-pale: #91caff;
+
+  /* ===== 背景色变体（语义化） ===== */
+  --color-bg-success: #f0f7f2;
+  --color-bg-danger: #fef2f2;
+  --color-bg-warning: #f7f8f6;
+  --color-bg-info: #e6f4ff;
+
+  /* ===== 边框色变体 ===== */
+  --color-border-success: #a5c9aa;
+  --color-border-danger: #ffccc7;
+  --color-border-warning: #d0d5cc;
+  --color-border-info: #91caff;
+
+  /* ===== 渐变色组合 ===== */
+  --gradient-success: linear-gradient(135deg, var(--color-success-pale), var(--color-success-light));
+  --gradient-danger: linear-gradient(135deg, var(--color-bg-danger), var(--color-danger-pale));
+  --gradient-warning: linear-gradient(135deg, var(--color-bg-warning), var(--color-warning-pale));
+  --gradient-info: linear-gradient(135deg, var(--color-bg-info), var(--color-info-pale));
+
+  --gradient-icon-success: linear-gradient(135deg, var(--color-success-dark), var(--color-success-medium));
+  --gradient-icon-danger: linear-gradient(135deg, var(--color-danger-dark), var(--color-danger-medium));
+  --gradient-icon-warning: linear-gradient(135deg, var(--color-warning-dark), var(--color-warning-medium));
+
+  --gradient-hint-error: linear-gradient(to right, var(--color-bg-danger), var(--color-white));
+  --gradient-hint-info: linear-gradient(to right, var(--color-bg-info), var(--color-white));
+
+  --gradient-progress: linear-gradient(90deg, var(--color-success-dark), var(--color-success-light), var(--color-success-pale));
+
+  --gradient-stats-bg: linear-gradient(135deg, var(--color-bg-card) 0%, var(--color-white-off) 100%);
+
+  /* ===== 字号阶梯 ===== */
+  --font-xs: 12px;
+  --font-sm: 14px;
+  --font-base: 16px;
+  --font-lg: 20px;
+  --font-xl: 24px;
+  --font-2xl: 32px;
+
+  /* ===== 间距（4px 网格） ===== */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ===== 圆角（仅 6px / 8px） ===== */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+
+  /* ===== 阴影（仅2级 + 功能性阴影） ===== */
+  --shadow-sm: 0 1px 2px var(--color-shadow);
+  --shadow-md: 0 4px 12px var(--color-shadow);
+  --shadow-inset: inset 0 2px 8px rgba(45, 58, 49, 0.04);
+  --shadow-hover: 0 4px 16px rgba(45, 58, 49, 0.08);
+  --shadow-success: 0 4px 12px rgba(56, 158, 13, 0.25);
+  --shadow-danger: 0 4px 12px rgba(217, 54, 62, 0.25);
+  --shadow-warning: 0 2px 8px rgba(107, 114, 103, 0.15);
+  --shadow-glow-success: 0 0 0 4px rgba(56, 158, 13, 0.06);
+  --shadow-glow-danger: 0 0 0 4px rgba(217, 54, 62, 0.06);
+  --shadow-glow-warning: 0 0 0 3px rgba(107, 114, 103, 0.05);
+  --shadow-focus-primary: 0 0 0 4px rgba(150, 116, 98, 0.08);
+  --shadow-inset-subtle: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-progress: 0 2px 4px rgba(56, 158, 13, 0.2);
+
+  /* ===== 过渡 ===== */
+  --transition-fast: 0.15s ease-out;
+  --transition-base: 0.3s ease-out;
+  --transition-smooth: 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ===== 侧边栏 ===== */
+  --sidebar-width: 240px;
+
+  /* ===== 字体族 ===== */
+  --font-heading: 'Playfair Display', Georgia, serif;
+  --font-body: 'Source Sans 3', 'Inter', system-ui, -apple-system, sans-serif;
+}

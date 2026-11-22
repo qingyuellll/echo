@@ -1,0 +1,58 @@
+# 测试环境配置 - 使用H2内存数据库 + Mock中间件
+# 当运行 @SpringBootTest 集成测试时使用此配置
+
+spring:
+  # H2内存数据库配置
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+
+  # H2控制台（调试用）
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # Redis配置（使用嵌入式Redis或禁用）
+  redis:
+    host: localhost
+    port: 6379
+    password:
+    database: 0
+    timeout: 3000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+
+  # 禁用某些自动配置
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.apache.rocketmq.spring.autoconfigure.RocketMQAutoConfiguration
+
+# RocketMQ配置（测试环境使用本地或禁用）
+rocketmq:
+  name-server: localhost:9876
+  producer:
+    group: test-producer-group
+    send-message-timeout: 3000
+
+# MyBatis-Plus配置
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# 日志级别（测试时显示SQL）
+logging:
+  level:
+    com.echo.mapper: debug
